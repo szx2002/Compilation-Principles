@@ -1,0 +1,233 @@
+ #include "def.h"
+struct node * mknode(int kind,struct node *first,struct node *second, struct node *third,int pos ) {
+        struct node *T=(struct node *)malloc(sizeof(struct node));
+        T->kind=kind;
+        T->ptr[0]=first;
+        T->ptr[1]=second;
+        T->ptr[2]=third;
+        T->pos=pos;
+        return T;
+}
+
+void display(struct node *T,int indent)  {//对抽象语法树的先根遍历
+        int i=1;
+        struct node *T0;
+        if (T)
+                {
+                switch (T->kind) {
+                case EXT_DEF_LIST:  
+                        display(T->ptr[0],indent);    //显示该外部定义列表中的第一个
+                        display(T->ptr[1],indent);    //显示该外部定义列表中的其它外部定义
+                        break;
+                case EXT_VAR_DEF:   
+                        printf("%*cVarExtern: \n",indent,' ');
+                        display(T->ptr[0],indent+3);        //显示外部变量类型
+                        printf("%*cVarName:\n",indent+3,' ');
+                        display(T->ptr[1],indent+6);        //显示变量列表
+                        break;
+                case TERM:
+                        if (T->ptr[0]) {
+                                printf("%*cArrays: ", indent, ' ');
+                        } else {
+                                printf("%*cID: ", indent, ' ');
+                        }
+                        printf("%s\n", T->type_id);
+                        display(T->ptr[0], indent+3);
+                        break;
+                case ARRAYS:
+                        T0 = T;
+                        i = 1;
+                        while (T0 != NULL) {
+                                printf("%*cDimension%d: \n", indent, ' ', i++);
+                                display(T0->ptr[0], indent+3);
+                                T0 = T0->ptr[1];
+                        }
+                        break;
+                case TYPE: 
+                case VOID:         
+                        printf("%*cType: %s\n",indent,' ',T->type_id);
+                        break;
+                case EXT_DEC_LIST:  
+                        display(T->ptr[0],indent);     //依次显示外部变量名，
+                        display(T->ptr[1],indent);     //后续还有相同的，仅显示语法树此处理代码可以和类似代码合并
+                        break;
+                case FUNC_DEF:      
+                        printf("%*cFunction Def: \n",indent,' ');
+                        display(T->ptr[0],indent+3);      //显示函数返回类型
+                        display(T->ptr[1],indent+3);      //显示函数名和参数
+                        display(T->ptr[2],indent+3);      //显示函数体
+                        break;
+                case FUNC_DEC:      
+                        printf("%*cFunctName: %s\n",indent,' ',T->type_id);
+                        if (T->ptr[0]) {
+                                printf("%*cFunctParam: \n",indent,' ');
+                                display(T->ptr[0],indent+3);  //显示函数参数列表
+                        }else printf("%*cFunctWithoutPara: \n",indent+3,' ');
+                        break;
+                case PARAM_LIST:    
+                        display(T->ptr[0],indent);     //依次显示全部参数类型和名称，
+                        display(T->ptr[1],indent);
+                        break;
+                case PARAM_DEC:     
+                        printf("%*cType: %s, Parameter: %s\n", indent,' ',  \
+                        T->ptr[0]->type==INT?"int": "float",T->ptr[1]->type_id);
+                        break;
+                case EXP_STMT:      
+                        printf("%*cStatement: \n",indent,' ');
+                        display(T->ptr[0],indent+3);
+                        break;
+                case RETURN:        
+                        printf("%*cReturn: \n",indent,' ');
+                        display(T->ptr[0],indent+3);
+                        break;
+                case COMP_STM:      
+                        printf("%*cComponent: \n",indent,' ');
+                        printf("%*cCompoVarDef: \n",indent+3,' ');
+                        display(T->ptr[0],indent+6);      //显示定义部分
+                        printf("%*cCompoStatement: \n",indent+3,' ');
+                        display(T->ptr[1],indent+6);      //显示语句部分
+                        break;
+                case STM_LIST:      
+                        display(T->ptr[0],indent);      //显示第一条语句
+                        display(T->ptr[1],indent);        //显示剩下语句
+                        break;
+                case WHILE:         
+                        printf("%*cLoop: \n",indent,' ');
+                        printf("%*cLoopCondi: \n",indent+3,' ');
+                        display(T->ptr[0],indent+6);      //显示循环条件
+                        printf("%*cLoopBody: \n",indent+3,' ');
+                        display(T->ptr[1],indent+6);      //显示循环体
+                        break;
+                case IF_THEN:       
+                        printf("%*cIF_THEN:\n",indent,' ');
+                        printf("%*cCOndition: \n",indent+3,' ');
+                        display(T->ptr[0],indent+6);      //显示条件
+                        printf("%*cIFStmt: \n",indent+3,' ');
+                        display(T->ptr[1],indent+6);      //显示if子句
+                        break;
+                case IF_THEN_ELSE:  
+                        printf("%*cIF_THEN_ELSE: \n",indent,' ');
+                        printf("%*cCondition: \n",indent+3,' ');
+                        display(T->ptr[0],indent+6);      //显示条件
+                        printf("%*cIFStatement: \n",indent+3,' ');
+                        display(T->ptr[1],indent+6);      //显示if子句
+                        printf("%*cELSEStatement: \n",indent+3,' ');
+                        display(T->ptr[2],indent+6);      //显示else子句
+                        break;
+                case DEF_LIST:      
+                        display(T->ptr[0],indent);    //显示该局部变量定义列表中的第一个
+                        display(T->ptr[1],indent);    //显示其它局部变量定义
+                        break;
+                case VAR_DEC:
+                        printf("%*cVarname: %s\n",indent,' ',T->type_id);
+                        if (T->ptr[0]) {
+                              printf("%*cVarVal: \n",indent+3,' ');
+                              display(T->ptr[0], indent+6);  //表达式初值
+                        }
+                        break;
+                case VAR_DEF:       
+                        printf("%*cLOCAL VAR_NAME：\n",indent,' ');
+                        display(T->ptr[0],indent+3);   //显示变量类型
+                        display(T->ptr[1],indent+3);   //显示该定义的全部变量名
+                        break;
+                case DEC_LIST:      
+                        printf("%*cVAR_NAME：\n",indent,' ');
+                        T0=T;
+                        while (T0) {
+                                if (T0->ptr[0]->kind==ID)
+                                        printf("%*c %s\n",indent+3,' ',T0->ptr[0]->type_id);
+                                else if (T0->ptr[0]->kind==ASSIGNOP){
+                                        printf("%*c %s ASSIGNOP\n ",indent+3,' ',T0->ptr[0]->ptr[0]->type_id);  
+                                        //显示初始化表达式
+                                        display(T0->ptr[0]->ptr[1],indent+strlen(T0->ptr[0]->ptr[0]->type_id)+4);       
+                                        }
+                                T0=T0->ptr[1];
+                        }
+                                break;
+                case ID:	        
+                        printf("%*cID： %s\n",indent,' ',T->type_id);
+                        break;
+                case INT:	        
+                        printf("%*cINT：%d\n",indent,' ',T->type_int);
+                        break;
+                case FLOAT:	        
+                        printf("%*cFLAOT：%f\n",indent,' ',T->type_float);
+                        break;
+                case ASSIGNOP:
+                case AND:
+                case OR:
+                case RELOP:
+                case PLUS:
+                case MINUS:
+                case STAR:
+                case DIV:
+                case MOD:
+                        printf("%*c%s\n",indent,' ',T->type_id);
+                        display(T->ptr[0],indent+3);
+                        display(T->ptr[1],indent+3);
+                        break;
+                case NOT:
+                case UMINUS:    
+                        printf("%*c%s\n",indent,' ',T->type_id);
+                        display(T->ptr[0],indent+3);
+                        break;
+                case SELF_ADD_EXP:
+                        printf("%*cSELF_ADD_EXP: \n",indent,' ');
+                        printf("%*cVar: %s\n", indent+3,' ', T->type_id);
+                        break;
+                case SELF_MINUS_EXP:
+                        printf("%*cSELF_MINUS_EXP: \n",indent,' ');
+                        printf("%*cVar: %s\n", indent+3,' ' , T->type_id);
+                        break;
+                case FUNC_CALL: 
+                        printf("%*cFunctCall:\n",indent,' ');
+                        printf("%*cFunctname:%s\n",indent+3,' ',T->type_id);
+                        display(T->ptr[0],indent+3);
+                        break;
+                case ARGS:      
+                        i=1;
+                        while (T) {  //ARGS表示实际参数表达式序列结点，其第一棵子树为其一个实际参数表达式，第二棵子树为剩下的。
+                                struct node *T0=T->ptr[0];
+                                printf("%*c %d th Stmt\n",indent,' ',i++);
+                                display(T0,indent+3);
+                                T=T->ptr[1];
+                        }
+        //                  printf("%*c第%d个实际参数表达式：\n",indent,' ',i);
+        //                  display(T,indent+3);
+                        printf("\n");
+                        break;
+                case CONTINUE_STMT:
+                        printf("%*cContinue: \n",indent,' ');
+                        break;
+                case BREAK_STMT:
+                        printf("%*cBreak: \n",indent,' ');
+                        break;
+                case FOR_STMT:
+	                printf("%*cfor Loop: \n",indent,' ');
+                        display(T->ptr[0], indent+3);
+                        printf("%*cLoopBody: \n",indent+3,' ');
+                        display(T->ptr[1], indent+6);
+                        break;
+                case FOR_ARGS:
+	                printf("%*cfor Stmt1: \n",indent,' ');
+                        if (T->ptr[0]) {
+                                display(T->ptr[0], indent+3);
+                        } else {
+	                        printf("%*cnone\n",indent+3,' ');
+                        }
+                        printf("%*cfor Stmt2: \n",indent,' ');
+                        if (T->ptr[1]) {
+                                display(T->ptr[1], indent+3);
+                        } else {
+	                        printf("%*cnone\n",indent+3,' ');
+                        }
+                        printf("%*cfor Stmt3: \n",indent,' ');
+                        if (T->ptr[2]) {
+                                display(T->ptr[2], indent+3);
+                        } else {
+                                printf("%*cnone\n",indent+3,' ');
+                        }
+                        break;
+                }
+        }
+}

@@ -1,0 +1,9 @@
+#include "common.h"
+
+// S->BR  select(S->BR) = {'0','1'}
+b_info parseS(){
+    int v,l;
+    v = parseB();
+    l = 1;
+    return parseR(v,l);
+}

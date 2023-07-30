@@ -1,0 +1,23 @@
+#include "common.h"
+extern char lookahead;
+// R->BR | 蔚   select(R->BR)={'0','1'}; select(R-> 蔚) ={'.','\n'} 
+b_info parseR(int v, int l){
+    b_info temp , res;
+    switch(lookahead){
+        case '0':
+        case '1':
+            temp.val = 2*v + parseB();
+            temp.len = l + 1;
+            res = parseR(temp.val, temp.len);
+            break;
+        case '.':
+        case '\n':
+            res.val = v;
+            res.len = l;
+            break;
+        default:
+           printf("syntax error\n");  
+           exit(0);            
+    }
+    return res;
+}
